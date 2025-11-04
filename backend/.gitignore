@@ -1,0 +1,38 @@
+# Ignore compiled Python files
+*.pyc
+__pycache__/
+
+# Ignore build artifacts
+/build/
+/dist/
+*.egg-info/
+.eggs/
+
+# Ignore log files
+*.log
+logs/
+
+# Ignore temporary files
+*.tmp
+*~
+
+# Ignore IDE and OS specific files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Ignore sensitive information (e.g., environment variables)
+.env
+config.local.js
+
+# Ignore dependencies
+node_modules/
+vendor/
+
+# Ignore generated documentation
+/docs/build/
+
+# Ignore test reports or coverage data
+/coverage/
+.nyc_output/
