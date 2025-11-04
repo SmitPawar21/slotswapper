@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./connection.js";
+import authRouter from "./routers/AuthRouter.js";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.use(cors({
     origin: "*",
     methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
+
+app.use("/api/auth", authRouter);
 
 app.get('/', (req, res) => {
     res.status(201).json({message: "Hello Smit"});
