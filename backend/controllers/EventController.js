@@ -174,3 +174,23 @@ export const removeEvent = async (req, res) => {
     });
   }
 };
+
+export const getSwappableSlots = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const events = await Event.find({
+      status: "SWAPPABLE",
+      userId: {$ne: userId}
+    }).populate("userId", "name email");
+
+    res.status(201).json(events);
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete event",
+      error: error.message,
+    });
+  }
+}

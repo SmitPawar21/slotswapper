@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./connection.js";
 import authRouter from "./routers/AuthRouter.js";
+import eventRouter from "./routers/EventRouter.js";
+import swapRouter from "./routers/SwapRouter.js";
 
 dotenv.config();
 
@@ -18,6 +20,8 @@ app.use(cors({
 }));
 
 app.use("/api/auth", authRouter);
+app.use("/api/events", eventRouter);
+app.use("/api/swap", swapRouter);
 
 app.get('/', (req, res) => {
     res.status(201).json({message: "Hello Smit"});
