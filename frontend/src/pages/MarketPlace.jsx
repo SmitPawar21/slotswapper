@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Modal, Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 import Cookies from "js-cookie";
 import Navbar from "../components/Navbar";
+import { ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const colors = {
     background: "#040D12",
@@ -34,6 +36,7 @@ const MarketPlace = () => {
             setAvailableSlots(data);
         } catch (error) {
             console.error("Error fetching available slots:", error);
+            toast.error(error)
         }
     };
 
@@ -48,10 +51,9 @@ const MarketPlace = () => {
             setMySwappableSlots(data);
         } catch (error) {
             console.error("Error fetching my swappable slots:", error);
+            toast.error(error)
         }
     };
-
-
 
     useEffect(() => {
         fetchAvailableSlots();
@@ -79,14 +81,14 @@ const MarketPlace = () => {
 
             const data = await res.json();
             if (data.success) {
-                alert("Swap request sent successfully!");
+                toast.success("Swap request sent successfully!");
                 setModalOpen(false);
             } else {
-                alert(data.message || "Failed to send swap request");
+                toast.error(data.message || "Failed to send swap request");
             }
         } catch (error) {
             console.error("Error sending swap request:", error);
-            alert("Error sending swap request");
+            toast.error("Error sending swap request");
         }
     };
 
@@ -108,6 +110,15 @@ const MarketPlace = () => {
 
     return (
         <div className="min-h-screen p-6" style={{ backgroundColor: colors.background }}>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}  
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                pauseOnHover
+                theme="colored"   
+            />
             <Navbar />
             <Typography
                 variant="h4"

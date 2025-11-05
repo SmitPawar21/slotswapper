@@ -12,8 +12,7 @@ import {
   CardContent,
   Divider,
   Chip,
-  AppBar,
-  Toolbar
+  IconButton,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -21,6 +20,9 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import dayjs from 'dayjs';
 import Navbar from '../components/Navbar';
 import Cookies from "js-cookie";
+import { Delete, Edit, Save, X } from 'lucide-react';
+import { ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const colors = {
   background: '#040D12',
@@ -35,6 +37,8 @@ const colors = {
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [events, setEvents] = useState([]);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [editedEvent, setEditedEvent] = useState({});
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -45,10 +49,97 @@ const Dashboard = () => {
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
+    setEditingEventId(null);
   };
 
   const handleEventInputChange = (field, value) => {
     setNewEvent(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditClick = (event) => {
+    setEditingEventId(event.id);
+    setEditedEvent({
+      title: event.title,
+      description: event.description,
+      startTime: dayjs(event.startTime).format('HH:mm'),
+      endTime: dayjs(event.endTime).format('HH:mm'),
+      status: event.status,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEventId(null);
+    setEditedEvent({});
+  };
+
+  const handleEditInputChange = (field, value) => {
+    setEditedEvent(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDeleteClick = async (eventId) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/events/remove/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${Cookies.get("token")}`
+        }
+      });
+
+      const data = await response.json();
+      toast.success("Deleted Event");
+
+    } catch (error) {
+      console.error("Error updating event:", error.message);
+      toast.error(error.message);
+    }
+  }
+
+  const handleUpdateEvent = async (eventId) => {
+    const dateStr = selectedDate.format('YYYY-MM-DD');
+    const startDateTime = new Date(`${dateStr}T${editedEvent.startTime}:00`);
+    const endDateTime = new Date(`${dateStr}T${editedEvent.endTime}:00`);
+
+    const eventData = {
+      id: eventId,
+      title: editedEvent.title,
+      description: editedEvent.description,
+      startTime: startDateTime,
+      endTime: endDateTime,
+      status: editedEvent.status,
+    };
+
+    try {
+      const token = Cookies.get("token");
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/events/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update event");
+      }
+
+      console.log("Event updated:", data.data);
+      toast.success("Event updated successfully!");
+
+      setEvents(prevEvents =>
+        prevEvents.map(event =>
+          event.id === eventId ? data.data : event
+        )
+      );
+      setEditingEventId(null);
+      setEditedEvent({});
+    } catch (error) {
+      console.error("Error updating event:", error.message);
+      toast.error(error.message);
+    }
   };
 
   const handleCreateEvent = async () => {
@@ -84,7 +175,7 @@ const Dashboard = () => {
       }
 
       console.log("Event created:", data.data);
-      alert("Event created successfully!");
+      toast.success("Event created successfully!");
 
       setNewEvent({
         title: '',
@@ -92,16 +183,16 @@ const Dashboard = () => {
         startTime: '',
         endTime: '',
         status: 'BUSY'
-      })
-      return data.data;
+      });
+
+      setEvents(prevEvents => [...prevEvents, data.data]);
     } catch (error) {
       console.error("Error creating event:", error.message);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   useEffect(() => {
-
     const getEventsForSelectedDate = async () => {
       try {
         const formattedDate = selectedDate.format("YYYY-MM-DD");
@@ -121,10 +212,10 @@ const Dashboard = () => {
       }
     };
 
-    getEventsForSelectedDate();
-
+    if (selectedDate) {
+      getEventsForSelectedDate();
+    }
   }, [selectedDate]);
-
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -137,6 +228,15 @@ const Dashboard = () => {
 
   return (
     <div style={{ backgroundColor: colors.background, minHeight: '100vh' }}>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnHover
+        theme="colored"
+      />
       <Navbar />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <Box sx={{
@@ -157,14 +257,14 @@ const Dashboard = () => {
             backgroundColor: colors.textLight,
           },
         }}>
-          {/* Calendar Section - 60% */}
+          {/* Calendar Section - 30% */}
           <Box
             sx={{
               width: '30%',
               p: 3,
               display: 'flex',
               justifyContent: 'center',
-              backgroundColor: colors.background, // Added for context, assuming a dark background for the calendar to sit on
+              backgroundColor: colors.background,
             }}
           >
             <DateCalendar
@@ -205,7 +305,7 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Sidebar - 40% */}
+          {/* Events List Section - 40% */}
           <Box sx={{
             width: '40%',
             backgroundColor: colors.cardBg,
@@ -213,7 +313,6 @@ const Dashboard = () => {
             overflowY: 'auto',
             p: 3
           }}>
-            {/* Events List Section */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="h6" sx={{ color: colors.textWhite, mb: 2 }}>
                 {selectedDate ? `Events on ${selectedDate.format('MMMM D, YYYY')}` : 'Select a date'}
@@ -232,38 +331,174 @@ const Dashboard = () => {
                   border: `1px solid ${colors.border}`
                 }}>
                   <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                      <Typography variant="h6" sx={{ color: colors.textWhite }}>
-                        {event.title}
-                      </Typography>
-                      <Chip
-                        label={event.status.replace('_', ' ')}
-                        size="small"
-                        sx={{
-                          backgroundColor: getStatusColor(event.status),
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </Box>
-                    {event.description && (
-                      <Typography sx={{ color: colors.textLight, mb: 1 }}>
-                        {event.description}
-                      </Typography>
+                    {editingEventId === event.id ? (
+                      <Box>
+                        <TextField
+                          fullWidth
+                          label="Title"
+                          value={editedEvent.title}
+                          onChange={(e) => handleEditInputChange('title', e.target.value)}
+                          sx={{
+                            mb: 2,
+                            '& .MuiOutlinedInput-root': {
+                              color: colors.textWhite,
+                              '& fieldset': { borderColor: colors.border },
+                              '&:hover fieldset': { borderColor: colors.textLight },
+                              '&.Mui-focused fieldset': { borderColor: colors.primary },
+                            },
+                            '& .MuiInputLabel-root': { color: colors.textLight },
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Description"
+                          value={editedEvent.description}
+                          onChange={(e) => handleEditInputChange('description', e.target.value)}
+                          multiline
+                          rows={2}
+                          sx={{
+                            mb: 2,
+                            '& .MuiOutlinedInput-root': {
+                              color: colors.textWhite,
+                              '& fieldset': { borderColor: colors.border },
+                              '&:hover fieldset': { borderColor: colors.textLight },
+                              '&.Mui-focused fieldset': { borderColor: colors.primary },
+                            },
+                            '& .MuiInputLabel-root': { color: colors.textLight },
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Start Time"
+                          type="time"
+                          value={editedEvent.startTime}
+                          onChange={(e) => handleEditInputChange('startTime', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          sx={{
+                            mb: 2,
+                            '& .MuiOutlinedInput-root': {
+                              color: colors.textWhite,
+                              '& fieldset': { borderColor: colors.border },
+                              '&:hover fieldset': { borderColor: colors.textLight },
+                              '&.Mui-focused fieldset': { borderColor: colors.primary },
+                            },
+                            '& .MuiInputLabel-root': { color: colors.textLight },
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="End Time"
+                          type="time"
+                          value={editedEvent.endTime}
+                          onChange={(e) => handleEditInputChange('endTime', e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                          sx={{
+                            mb: 2,
+                            '& .MuiOutlinedInput-root': {
+                              color: colors.textWhite,
+                              '& fieldset': { borderColor: colors.border },
+                              '&:hover fieldset': { borderColor: colors.textLight },
+                              '&.Mui-focused fieldset': { borderColor: colors.primary },
+                            },
+                            '& .MuiInputLabel-root': { color: colors.textLight },
+                          }}
+                        />
+                        <FormControl fullWidth sx={{ mb: 2 }}>
+                          <InputLabel sx={{ color: colors.textLight }}>Status</InputLabel>
+                          <Select
+                            value={editedEvent.status}
+                            onChange={(e) => handleEditInputChange('status', e.target.value)}
+                            label="Status"
+                            sx={{
+                              color: colors.textWhite,
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
+                              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.textLight },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.primary },
+                              '& .MuiSvgIcon-root': { color: colors.textLight },
+                            }}
+                          >
+                            <MenuItem value="BUSY">Busy</MenuItem>
+                            <MenuItem value="SWAPPABLE">Swappable</MenuItem>
+                            <MenuItem value="SWAP_PENDING">Swap Pending</MenuItem>
+                          </Select>
+                        </FormControl>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="contained"
+                            startIcon={<Save size={18} />}
+                            onClick={() => handleUpdateEvent(event._id)}
+                            sx={{
+                              flex: 1,
+                              backgroundColor: colors.primary,
+                              '&:hover': { backgroundColor: colors.primaryHover },
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            startIcon={<X size={18} />}
+                            onClick={handleCancelEdit}
+                            sx={{
+                              flex: 1,
+                              borderColor: colors.border,
+                              color: colors.textLight,
+                              '&:hover': { borderColor: colors.textLight },
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                          <Typography variant="h6" sx={{ color: colors.textWhite }}>
+                            {event.title}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <Chip
+                              label={event.status.replace('_', ' ')}
+                              size="small"
+                              sx={{
+                                backgroundColor: getStatusColor(event.status),
+                                color: 'white',
+                                fontWeight: 'bold'
+                              }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditClick(event)}
+                              sx={{ color: colors.textLight, '&:hover': { color: colors.textWhite } }}
+                            >
+                              <Edit size={18} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteClick(event._id)}
+                              sx={{ color: colors.textLight, '&:hover': { color: colors.textWhite } }}
+                            >
+                              <X size={18} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        {event.description && (
+                          <Typography sx={{ color: colors.textLight, mb: 1 }}>
+                            {event.description}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" sx={{ color: colors.textLight }}>
+                          {dayjs(event.startTime).format('h:mm A')} - {dayjs(event.endTime).format('h:mm A')}
+                        </Typography>
+                      </>
                     )}
-                    <Typography variant="body2" sx={{ color: colors.textLight }}>
-                      {dayjs(event.startTime).format('h:mm A')} - {dayjs(event.endTime).format('h:mm A')}
-                    </Typography>
                   </CardContent>
                 </Card>
               ))}
             </Box>
-
-            <Divider sx={{ backgroundColor: colors.border, mb: 3 }} />
-
-
           </Box>
 
+          {/* Create Event Section - 40% */}
           <Box sx={{
             width: '40%',
             backgroundColor: colors.cardBg,
@@ -271,7 +506,6 @@ const Dashboard = () => {
             overflowY: 'auto',
             p: 3
           }}>
-            {/* Create Event Section */}
             <Box>
               <Typography variant="h6" sx={{ color: colors.textWhite, mb: 2 }}>
                 Create New Event

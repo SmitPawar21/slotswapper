@@ -109,7 +109,7 @@ export const updateEvent = async (req, res) => {
     const userId = req.user.id;
     const { id, title, description, startTime, endTime, status } = req.body;
 
-    if (!id) {
+    if (!id) {x
       return res.status(400).json({
         success: false,
         message: "Event ID is required",
@@ -133,26 +133,6 @@ export const updateEvent = async (req, res) => {
         success: false,
         message: "End time must be after start time",
       });
-    }
-
-    if (startTime || endTime) {
-      const overlappingEvent = await Event.findOne({
-        userId,
-        _id: { $ne: id },
-        $or: [
-          {
-            startTime: { $lt: newEndTime },
-            endTime: { $gt: newStartTime },
-          },
-        ],
-      });
-
-      if (overlappingEvent) {
-        return res.status(409).json({
-          success: false,
-          message: "Updated times overlap with another event",
-        });
-      }
     }
 
     if (title) event.title = title;

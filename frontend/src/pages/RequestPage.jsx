@@ -14,6 +14,8 @@ import {
 } from "@mui/material";
 import Cookies from "js-cookie";
 import Navbar from "../components/Navbar";
+import { ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const colors = {
     background: "#040D12",
@@ -57,6 +59,7 @@ const RequestPage = () => {
             setPendingRequests(data);
         } catch (error) {
             console.error("Error fetching pending requests:", error);
+            toast.error(error)
         }
     };
 
@@ -80,29 +83,35 @@ const RequestPage = () => {
                 })
             });
             const data = await response.json();
-            console.log(data);
+            toast.success("ACCEPT sent");
         } catch (Err) {
             console.log(Err);
+            toast.error(Err)
         }
 
     };
 
     const handleReject = async (request) => {
         console.log("Rejecting request:", request);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/swap/respond`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    accepted: "false",
+                    requestId: request.requesterId._id
+                })
+            });
+            const data = await response.json();
+            toast.success("REJECT sent");
+        } catch (Err) {
+            console.log(Err);
+            toast.error(Err);
+        }
 
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/swap/respond`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                accepted: "false",
-                requestId: request.requesterId._id
-            })
-        });
-        const data = await response.json();
-        console.log(data);
     };
 
     return (
@@ -110,6 +119,15 @@ const RequestPage = () => {
             className="min-h-screen p-6"
             style={{ backgroundColor: colors.background }}
         >
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}   
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                pauseOnHover
+                theme="colored"   
+            />
             <Navbar />
             <Typography
                 variant="h4"
