@@ -46,26 +46,30 @@ export const createSwapRequest = async (req, res) => {
 export const respondToSwapRequest = async (req, res) => {
   try {
     const { accepted, requestId } = req.body;
-    const userId = req.user.id;
 
-    const request = await SwapRequest.findById(requestId)
+    const request = await SwapRequest.findOne({requesterId: requestId})
       .populate("requesterEventId")
       .populate("receiverEventId");
+
+    console.log("Respond controller me user: ", request);
 
     if (!request)
       return res.status(404).json({ message: "Swap request not found" });
 
-    if (String(request.receiverId) !== String(userId))
-      return res.status(403).json({ message: "Unauthorized" });
-
     const requesterEvent = request.requesterEventId;
     const receiverEvent = request.receiverEventId;
 
-    if (accepted) {
+    console.log(requesterEvent)
 
-      const tempOwner = requesterEvent.userId;
-      requesterEvent.userId = receiverEvent.userId;
-      receiverEvent.userId = tempOwner;
+    if (accepted === "true") {
+
+      const tempStart = requesterEvent.startTime;
+      requesterEvent.startTime = receiverEvent.startTime;
+      receiverEvent.startTime = tempStart;
+
+      const tempEnd = requesterEvent.endTime;
+      requesterEvent.endTime = receiverEvent.endTime;
+      receiverEvent.endTime = tempEnd;
 
       requesterEvent.status = "BUSY";
       receiverEvent.status = "BUSY";
@@ -90,6 +94,23 @@ export const respondToSwapRequest = async (req, res) => {
       return res.json({ message: "Swap request rejected" });
     }
   } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error processing swap response", error });
+  }
+}
+
+export const getSwapPendingSlots = async (req, res) => {
+  try {
+    const userId = req.user.id;
+  
+    const swapRequests = await SwapRequest.find({receiverId: userId})
+      .populate("requesterEventId")
+      .populate("receiverEventId")
+      .populate("requesterId")
+  
+    return res.status(201).json(swapRequests);
+  } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Error processing swap response", error });
   }
 }

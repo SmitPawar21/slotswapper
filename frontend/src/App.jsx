@@ -6,6 +6,7 @@ import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
 import Dashboard from "./pages/Dashboard";
 import MarketPlace from "./pages/MarketPlace";
+import RequestPage from "./pages/RequestPage";
 
 const ProtectedRoute = ({ children }) => {
   const { user, token, loading } = useContext(AuthContext);
@@ -35,6 +36,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/marketplace" element={<MarketPlace />} />
+          <Route path="/requests" element={<RequestPage />} />
 
         </Routes>
       </Router>

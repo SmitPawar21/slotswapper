@@ -1,9 +1,11 @@
 import express from "express";
-import { createSwapRequest, respondToSwapRequest } from "../controllers/SwapController.js";
+import { createSwapRequest, getSwapPendingSlots, respondToSwapRequest } from "../controllers/SwapController.js";
+import verifyToken from "../middlewares/verifyToken.js";
 
 const router = express.Router();
 
-router.post('/request', createSwapRequest);
-router.post("/respond", respondToSwapRequest);
+router.post('/request', verifyToken, createSwapRequest);
+router.post("/respond", verifyToken, respondToSwapRequest);
+router.get('/pending-slots', verifyToken, getSwapPendingSlots);
 
 export default router;
