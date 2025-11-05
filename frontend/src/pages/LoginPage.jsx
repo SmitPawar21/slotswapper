@@ -29,7 +29,7 @@ const LoginPage = () => {
       console.log(data);
 
       login(data.user.email, data.token);
-      navigate('/calendar');
+      navigate('/dashboard');
     } catch (e) {
       console.log(e);
       setError(e);

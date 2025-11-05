@@ -65,6 +65,45 @@ export const createEvent = async (req, res) => {
   }
 };
 
+export const getEventsByDate = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: "Date is required in query parameters",
+      });
+    }
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const events = await Event.find({
+      userId,
+      startTime: { $lt: endOfDay },
+      endTime: { $gt: startOfDay },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Events fetched successfully",
+      data: events,
+    });
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch events",
+      error: error.message,
+    });
+  }
+};
+
 export const updateEvent = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -183,6 +222,26 @@ export const getSwappableSlots = async (req, res) => {
       status: "SWAPPABLE",
       userId: {$ne: userId}
     }).populate("userId", "name email");
+
+    res.status(201).json(events);
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete event",
+      error: error.message,
+    });
+  }
+};
+
+export const mySwappableSlots = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const events = await Event.find({
+      status: "SWAPPABLE",
+      userId
+    });
 
     res.status(201).json(events);
   } catch (error) {

@@ -12,10 +12,10 @@ export const createSwapRequest = async (req, res) => {
     if (!myEvent || !receiverEvent)
       return res.status(404).json({ message: "One or both slots not found" });
 
-    if (myEvent.status !== "SWAPPABLE" || theirEvent.status !== "SWAPPABLE")
+    if (myEvent.status !== "SWAPPABLE" || receiverEvent.status !== "SWAPPABLE")
       return res.status(400).json({ message: "Both slots must be SWAPPABLE" });
 
-    if (String(myEvent.userId) === String(theirEvent.userId))
+    if (String(myEvent.userId) === String(receiverEvent.userId))
       return res.status(400).json({ message: "Cannot swap with your own slot" });
 
     const swapRequest = await SwapRequest.create({
@@ -38,6 +38,7 @@ export const createSwapRequest = async (req, res) => {
       swapRequest,
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Error creating swap request", error });
   }
 }
